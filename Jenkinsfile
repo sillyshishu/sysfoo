@@ -1,10 +1,5 @@
 pipeline {
-  agent {
-    docker {
-      image 'maven:3.6.3-jdk-11-slim'
-    }
-
-  }
+  agent none
   stages {
     stage('build') {
       steps {
@@ -25,6 +20,20 @@ pipeline {
         echo 'package maven app'
         sh 'mvn package -DskipTests'
         archiveArtifacts(artifacts: 'target/*.war', allowEmptyArchive: true)
+      }
+    }
+
+    stage('Docker Build and Publish') {
+      steps {
+        script {
+          docker.withRegistry('https://index.docker.io/v1/', 'dockerlogin') {
+            def dockerImage = docker.build("sillyshishu/sysfoo:v${env.BUILD_ID}", "./")
+            dockerImage.push()
+            dockerImage.push("latest")
+            dockerImage.push("dev")
+          }
+        }
+
       }
     }
 
